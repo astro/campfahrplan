@@ -1,5 +1,4 @@
 // TODO:
-// * colourize
 // * faves
 // * geoloc
 
@@ -25,7 +24,6 @@ function loadData() {
     status("Loading re-data...")
 }
 loadData()
-
 
 var sessions = []
 function addSession(data) {
@@ -59,23 +57,24 @@ function displaySessions() {
         }
 
         // Session article
-        var el = $('<article><h2><a></a></h2></article>')
+        var el = $('<article><h2><a></a></h2><div class="r"></div><div class="l"></div></article>')
+        el.css('background-color', "rgb(" + data.track.color.slice(0, 3).join(",") + ")")
         el.find('h2 a').
           attr('href', data.url).
           text(data.title)
-        function addP(klass, s) {
+        function addP(parentKlass, klass, s) {
             if (!s) return
 
             var p = $('<p></p>')
             p.
               attr('class', klass).
               text(s)
-            el.append(p)
+            el.find("." + parentKlass).append(p)
         }
-        addP('time', formatDate(data.begin, true) + " - " + formatDate(data.end))
-        addP('subtitle', data.subtitle)
-        addP('location', data.location.label_en || data.location.label_de || data.location.label_id)
-        addP('speakers', data.speakers.map(function(s) { return s.name }).join(", "))
+        addP('r', 'time', formatDate(data.begin, true) + " - " + formatDate(data.end))
+        addP('l', 'subtitle', data.subtitle)
+        addP('r', 'location', data.location.label_en || data.location.label_de || data.location.label_id)
+        addP('l', 'speakers', data.speakers.map(function(s) { return s.name }).join(", "))
         parent.append(el)
     })
 }
