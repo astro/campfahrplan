@@ -5,16 +5,32 @@ function status(s) {
     $('#status').text(s)
 }
 
+function mangleLocationId(id) {
+    return id.
+      replace(/^camp15-/, "").
+      replace(/^poi-/, "")
+}
+
 function loadData() {
     $.ajax({
         url: "http://api.conference.bits.io/api/camp15/sessions",
         success: function(data) {
-            status("All received")
-            console.log("data", data)  // TODO: rm
-
             sessions = data.data
-            displaySessions()
-            $('#status').slideUp()
+            $.ajax({
+                url: "http://api.conference.bits.io/api/camp15/pois",
+                success: function(data) {
+                    data.data.forEach(function(poi) {
+                        pois[mangleLocationId(poi.id)] = poi
+                    })
+                    status("All received")
+
+                    displaySessions()
+                    $('#status').slideUp()
+                },
+                error: function(xhr, status) {
+                    status("Error: " + status)
+                }
+            })
         },
         error: function(xhr, status) {
             status("Error: " + status)
@@ -24,6 +40,7 @@ function loadData() {
 }
 loadData()
 
+var pois = {}
 var sessions = []
 function addSession(data) {
     sessions.push(data)
@@ -35,7 +52,7 @@ function displaySessions() {
         return Date.parse(a.begin) - Date.parse(b.begin)
     })
     var parent = $('#sessions')
-    var nav = $('<nav><ul></ul></nav>')
+    var nav = $('<nav><p>Jump to:</p> <ul></ul></nav>')
     $('body').prepend(nav)
     nav = nav.find('ul')
     sessions.forEach(function(data) {
@@ -94,8 +111,56 @@ function displaySessions() {
         addP('r', 'location', data.location.label_en || data.location.label_de || data.location.label_id)
         addP('l', 'speakers', data.speakers.map(function(s) { return s.name }).join(", "))
         parent.append(el)
+
+        var poi = pois[mangleLocationId(data.location.id)]
+        var eventCoords = poi &&
+            [poi.geo_position.long, poi.geo_position.lat]
+        var locationEl
+        if (eventCoords) {
+            data.updateLocation = function(geo) {
+                if (!locationEl) {
+                    locationEl = $('<dl class="geo"><dt class="arrow">➢</dt><dd class="dist"></dd>')
+                    locationEl.insertAfter(el.find('h2'))
+                }
+
+                var bearing = -180.0 * Math.atan2(
+                    eventCoords[1] - geo.coords.latitude,
+                    eventCoords[0] - geo.coords.longitude
+                ) / Math.PI
+                // console.log("bearing between " + geo.coords.latitude + "," + geo.coords.longitude + " and " + eventCoords[1] + "," + eventCoords[0] + ": " + bearing)
+
+                locationEl.find('.arrow').css('transform', 'rotate(' + bearing + 'deg)')
+                    
+                var distance = Math.round(WGS84Util.distanceBetween(
+                    { coordinates: [geo.coords.longitude, geo.coords.latitude] },
+                    { coordinates: eventCoords }
+                ))
+                locationEl.find('.dist').text(distance + "m")
+            }
+            if (lastGeo)
+              data.updateLocation(lastGeo)
+        } else {
+            console.warn("No such poi: " + data.location.id + " => " + mangleLocationId(data.location.id))
+        }
     })
 }
+
+var lastGeo
+function onGeo(geo) {
+    if (true || geo.accuracy <= 1000) {
+        lastGeo = geo
+        sessions.forEach(function(session) {
+            if (session.updateLocation)
+              session.updateLocation(geo)
+        })
+    }
+}
+navigator.geolocation.getCurrentPosition(function(geo) {
+    onGeo(geo)
+    navigator.geolocation.watchPosition(onGeo, null, {
+        enableHighAccuracy: true
+    })
+})
 
 function getUrl(data) {
     return data.links.filter(function(l) {
