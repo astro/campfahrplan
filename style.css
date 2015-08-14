@@ -44,6 +44,18 @@ article {
     text-align: left;
 }
 
+article .fave:before {
+    float: right;
+    font-weight: bold;
+    content: '☆';
+    color: #333;
+    font-size: 200%;
+}
+article.faved .fave:before {
+    content: '★';
+    color: #ff7;
+}
+
 article h2 a {
     color: white;
     font-weight: 900;

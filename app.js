@@ -1,5 +1,4 @@
 // TODO:
-// * faves
 // * geoloc
 
 function status(s) {
@@ -57,7 +56,26 @@ function displaySessions() {
         }
 
         // Session article
-        var el = $('<article><h2><a></a></h2><div class="r"></div><div class="l"></div></article>')
+        var el = $('<article><p class="fave"></p><h2><a></a></h2><div class="r"></div><div class="l"></div></article>')
+
+        var storageKey = 'fav-' + data.id
+        function refreshFav() {
+            if (localStorage[storageKey]) {
+                el.addClass('faved')
+            } else {
+                el.removeClass('faved')
+            }
+        }
+        el.find('.fave').click(function() {
+            if (localStorage[storageKey]) {
+                delete localStorage[storageKey]
+            } else {
+                localStorage[storageKey] = true
+            }
+            refreshFav()
+        })
+        refreshFav()
+
         el.css('background-color', "rgb(" + data.track.color.slice(0, 3).join(",") + ")")
         el.find('h2 a').
           attr('href', getUrl(data)).
