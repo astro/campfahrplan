@@ -1,0 +1,62 @@
+body {
+    color: black;
+    background-color: #ccc;
+}
+
+nav ul {
+    text-align: right;
+    display: block;
+    list-style-type: none;
+}
+nav ul li {
+    display: inline-block;
+}
+nav ul li {
+    text-decoration: none;
+    color: #333;
+    margin: 0 0 0 0.5em;
+}
+
+section {
+    text-align: center;
+    display: block;
+}
+
+section h1 {
+    font-size: 150%;
+    text-align: center;
+}
+
+p {
+    margin: 0.1em 0.2em;
+    padding: 0.1em 0.2em;
+}
+
+article {
+    vertical-align: top;
+    display: inline-block;
+    width: 30em;
+    height: 14em;
+    margin: 0.5em 1em;
+    padding: 0.5em 0.2em;
+    background-color: white;
+    text-align: left;
+}
+
+article h2 a {
+    color: #333;
+    font-weight: 900;
+    font-size: 110%;
+    text-decoration: none;
+}
+
+article .subtitle {
+    font-style: italic;
+}
+
+article .time, article .location {
+    float: right;
+    clear: right;
+    text-align: right;
+    width: 10em;
+}
