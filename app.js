@@ -60,7 +60,7 @@ function displaySessions() {
         var el = $('<article><h2><a></a></h2><div class="r"></div><div class="l"></div></article>')
         el.css('background-color', "rgb(" + data.track.color.slice(0, 3).join(",") + ")")
         el.find('h2 a').
-          attr('href', data.url).
+          attr('href', getUrl(data)).
           text(data.title)
         function addP(parentKlass, klass, s) {
             if (!s) return
@@ -77,6 +77,14 @@ function displaySessions() {
         addP('l', 'speakers', data.speakers.map(function(s) { return s.name }).join(", "))
         parent.append(el)
     })
+}
+
+function getUrl(data) {
+    return data.links.filter(function(l) {
+        return l.type === 'session-link'
+    }).map(function(l) {
+        return l.url
+    })[0] || data.url
 }
 
 var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
