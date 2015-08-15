@@ -119,8 +119,8 @@ function displaySessions() {
         if (eventCoords) {
             data.updateLocation = function(geo) {
                 if (!locationEl) {
-                    locationEl = $('<dl class="geo"><dt class="arrow">➢</dt><dd class="dist"></dd>')
-                    locationEl.insertAfter(el.find('h2'))
+                    locationEl = $('<div class="geo"><p class="arrow"><span>➢</span></p><p class="dist"></p></div>')
+                    el.find('.r').append(locationEl)
                 }
 
                 var bearing = -180.0 * Math.atan2(
@@ -129,7 +129,9 @@ function displaySessions() {
                 ) / Math.PI
                 // console.log("bearing between " + geo.coords.latitude + "," + geo.coords.longitude + " and " + eventCoords[1] + "," + eventCoords[0] + ": " + bearing)
 
-                locationEl.find('.arrow').css('transform', 'rotate(' + bearing + 'deg)')
+                if (typeof geo.heading === 'number')
+                  locationEl.find('.arrow span').text("➡")
+                locationEl.find('.arrow span').css('transform', 'rotate(' + (bearing - (geo.heading || 0)) + 'deg)')
                     
                 var distance = Math.round(WGS84Util.distanceBetween(
                     { coordinates: [geo.coords.longitude, geo.coords.latitude] },
@@ -148,6 +150,8 @@ function displaySessions() {
 var lastGeo
 function onGeo(geo) {
     if (true || geo.accuracy <= 1000) {
+        if (lastGeo && lastGeo.heading && typeof geo.heading !== 'number')
+          geo.heading = lastGeo.heading
         lastGeo = geo
         sessions.forEach(function(session) {
             if (session.updateLocation)
