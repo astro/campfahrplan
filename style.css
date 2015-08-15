@@ -77,6 +77,9 @@ article .geo .arrow {
     font-size: 250%;
     font-weight: bold;
 }
+article .geo .arrow span {
+    display: inline-block;
+}
 article .geo .dist {
     margin: 0;
     text-align: center;
