@@ -5,12 +5,6 @@ function status(s) {
     $('#status').text(s)
 }
 
-function mangleLocationId(id) {
-    return id.
-      replace(/^camp15-/, "").
-      replace(/^poi-/, "")
-}
-
 function loadData() {
     $.ajax({
         url: "http://api.conference.bits.io/api/camp15/sessions",
@@ -20,7 +14,8 @@ function loadData() {
                 url: "http://api.conference.bits.io/api/camp15/pois",
                 success: function(data) {
                     data.data.forEach(function(poi) {
-                        pois[mangleLocationId(poi.id)] = poi
+                        if (poi.location && poi.location.id)
+                          pois[poi.location.id] = poi
                     })
                     status("All received")
 
@@ -112,7 +107,7 @@ function displaySessions() {
         addP('l', 'speakers', data.speakers.map(function(s) { return s.name }).join(", "))
         parent.append(el)
 
-        var poi = pois[mangleLocationId(data.location.id)]
+        var poi = pois[data.location.id]
         var eventCoords = poi &&
             [poi.geo_position.long, poi.geo_position.lat]
         var locationEl
@@ -142,7 +137,7 @@ function displaySessions() {
             if (lastGeo)
               data.updateLocation(lastGeo)
         } else {
-            console.warn("No such poi: " + data.location.id + " => " + mangleLocationId(data.location.id))
+            console.warn("No such poi: " + data.location.id + " => " + data.location.id)
         }
     })
 }
