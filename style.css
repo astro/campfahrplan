@@ -47,7 +47,7 @@ article {
     vertical-align: top;
     display: inline-block;
     width: 30em;
-    min-height: 12em;
+    min-height: 6em;
     margin: 0.5em;
     padding: 0.3em;
     background-color: black;
@@ -59,8 +59,9 @@ article .fave:before {
     float: right;
     font-weight: bold;
     content: '☆';
-    color: #333;
+    color: #777;
     font-size: 200%;
+    cursor: pointer;
 }
 article.faved .fave:before {
     content: '★';

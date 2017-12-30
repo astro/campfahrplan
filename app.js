@@ -1,24 +1,62 @@
-// TODO:
-// * geoloc
-
 function status(s) {
     $('#status').text(s)
 }
 
+var TZ_OFFSET = 1 * 3600 * 1000
+
 function loadData() {
     $.ajax({
-        url: "http://api.conference.bits.io/api/camp15/sessions",
+        url: "schedule.json",
         success: function(data) {
-            sessions = data.data
-            $.ajax({
-                url: "http://api.conference.bits.io/api/camp15/pois",
-                success: function(data) {
-                    data.data.forEach(function(poi) {
-                        if (poi.location && poi.location.id)
-                          pois[poi.location.id] = poi
+            data.schedule.conference.days.forEach(function(day) {
+                Object.keys(day.rooms).forEach(function(room) {
+                    day.rooms[room].forEach(function(event) {
+                        var begin = new Date(event.date)
+                        var ds = event.duration.split(/:/)
+                            .map(function(d) { return parseInt(d, 10) })
+                        var duration = ((ds[0] * 60) + ds[1]) * 60 * 1000
+                        addSession({
+                            id: event.id,
+                            title: event.title,
+                            subtitle: event.subtitle,
+                            begin: begin,
+                            end: new Date(begin.getTime() + duration),
+                            track: event.track,
+                            location: room,
+                            speakers: event.persons.map(function(person) {
+                                return person.public_name || person.name
+                            }),
+                            link: event.url,
+                        })
                     })
-                    status("All received")
+                })
+            })
+            displaySessions()
 
+            $.ajax({
+                url: "sessions.json",
+                success: function(data) {
+                    Object.keys(data.results).forEach(function(key) {
+                        var session = data.results[key]
+                        var name = key.replace(/^Session:/, "")
+                            .replace(/#.*/, "")
+                        function getProp(label) {
+                            var r = session.printouts[label]
+                            return r && r[0]
+                        }
+                        addSession({
+                            id: key,
+                            title: name,
+                            subtitle: getProp('description'),
+                            location: getProp('location') && getProp('location').fulltext,
+                            begin: new Date(parseInt(getProp('start'), 10) * 1000 - TZ_OFFSET),
+                            end: new Date(parseInt(getProp('end'), 10) * 1000 - TZ_OFFSET),
+                            duration: getProp('end', 10),
+                            link: session.fullurl,
+                        })
+                    })
+
+                    status("All received")
                     displaySessions()
                     $('#status').slideUp()
                 },
@@ -35,7 +73,6 @@ function loadData() {
 }
 loadData()
 
-var pois = {}
 var sessions = []
 function addSession(data) {
     sessions.push(data)
@@ -47,6 +84,8 @@ function displaySessions() {
         return Date.parse(a.begin) - Date.parse(b.begin)
     })
     var parent = $('#sessions')
+    parent.empty()
+    $('nav').remove()
     var nav = $('<nav><p>Jump to:</p> <ul></ul></nav>')
     $('body').prepend(nav)
     nav = nav.find('ul')
@@ -88,9 +127,10 @@ function displaySessions() {
         })
         refreshFav()
 
-        el.css('background-color', "rgb(" + data.track.color.slice(0, 3).join(",") + ")")
+        el.css('background-color', /^Session:/.test(data.id) ?
+               '#7f3f1f' : '#3f1f7f')
         el.find('h2 a').
-          attr('href', getUrl(data)).
+          attr('href', data.link).
           text(data.title)
         function addP(parentKlass, klass, s) {
             if (!s) return
@@ -103,70 +143,10 @@ function displaySessions() {
         }
         addP('r', 'time', formatDate(data.begin, true) + " - " + formatDate(data.end))
         addP('l', 'subtitle', data.subtitle)
-        addP('r', 'location', data.location.label_en || data.location.label_de || data.location.label_id)
-        addP('l', 'speakers', data.speakers.map(function(s) { return s.name }).join(", "))
+        addP('r', 'location', data.location)
+        // addP('l', 'speakers', data.speakers.map(function(s) { return s.name }).join(", "))
         parent.append(el)
-
-        var poi = pois[data.location.id]
-        var eventCoords = poi &&
-            [poi.geo_position.long, poi.geo_position.lat]
-        var locationEl
-        if (eventCoords) {
-            data.updateLocation = function(geo) {
-                if (!locationEl) {
-                    locationEl = $('<div class="geo"><p class="arrow"><span>➢</span></p><p class="dist"></p></div>')
-                    el.find('.r').append(locationEl)
-                }
-
-                var bearing = -180.0 * Math.atan2(
-                    eventCoords[1] - geo.coords.latitude,
-                    eventCoords[0] - geo.coords.longitude
-                ) / Math.PI
-                // console.log("bearing between " + geo.coords.latitude + "," + geo.coords.longitude + " and " + eventCoords[1] + "," + eventCoords[0] + ": " + bearing)
-
-                if (typeof geo.heading === 'number')
-                  locationEl.find('.arrow span').text("➡")
-                locationEl.find('.arrow span').css('transform', 'rotate(' + (bearing - (geo.heading || 0)) + 'deg)')
-                    
-                var distance = Math.round(WGS84Util.distanceBetween(
-                    { coordinates: [geo.coords.longitude, geo.coords.latitude] },
-                    { coordinates: eventCoords }
-                ))
-                locationEl.find('.dist').text(distance + "m")
-            }
-            if (lastGeo)
-              data.updateLocation(lastGeo)
-        } else {
-            console.warn("No such poi: " + data.location.id + " => " + data.location.id)
-        }
     })
-}
-
-var lastGeo
-function onGeo(geo) {
-    if (true || geo.accuracy <= 1000) {
-        if (lastGeo && lastGeo.heading && typeof geo.heading !== 'number')
-          geo.heading = lastGeo.heading
-        lastGeo = geo
-        sessions.forEach(function(session) {
-            if (session.updateLocation)
-              session.updateLocation(geo)
-        })
-    }
-}
-navigator.geolocation.getCurrentPosition(function(geo) {
-    onGeo(geo)
-    navigator.geolocation.watchPosition(onGeo, null, {
-        enableHighAccuracy: true
-    })
-})
-
-function getUrl(data) {
-    return data.links.filter(function(l) {
-        return l.type === 'session-link'
-    }).map(function(l) {
-        return l.url
-    })[0] || data.url
 }
 
 var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
