@@ -46,9 +46,9 @@ p {
 article {
     vertical-align: top;
     display: inline-block;
-    width: 30em;
+    width: 20em;
     min-height: 6em;
-    margin: 0.5em;
+    margin: 0.3em;
     padding: 0.3em;
     background-color: black;
     color: white;

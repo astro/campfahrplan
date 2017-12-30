@@ -44,11 +44,14 @@ function loadData() {
                             var r = session.printouts[label]
                             return r && r[0]
                         }
+                        var location = ("" + (getProp('location') && getProp('location').fulltext))
+                            .replace(/^Room:/, "")
+                            .replace(/^Assembly:/, "")
                         addSession({
                             id: key,
                             title: name,
                             subtitle: getProp('description'),
-                            location: getProp('location') && getProp('location').fulltext,
+                            location: location,
                             begin: new Date(parseInt(getProp('start'), 10) * 1000 - TZ_OFFSET),
                             end: new Date(parseInt(getProp('end'), 10) * 1000 - TZ_OFFSET),
                             duration: getProp('end', 10),
