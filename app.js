@@ -36,26 +36,31 @@ function loadData() {
             $.ajax({
                 url: "sessions.json",
                 success: function(data) {
-                    Object.keys(data.results).forEach(function(key) {
-                        var session = data.results[key]
+                    Object.keys(data).forEach(function(key) {
+                        var session = data[key]
                         var name = key.replace(/^Session:/, "")
                             .replace(/#.*/, "")
                         function getProp(label) {
-                            var r = session.printouts[label]
+                            var r = session[label]
                             return r && r[0]
                         }
-                        var location = ("" + (getProp('location') && getProp('location').fulltext))
+                        var location = getProp('Has session location')
+                        location = location && location.fulltext
+                        location = ("" + location)
                             .replace(/^Room:/, "")
                             .replace(/^Assembly:/, "")
                         addSession({
                             id: key,
                             title: name,
-                            subtitle: getProp('description'),
+                            subtitle: getProp('Has description'),
                             location: location,
-                            begin: new Date(parseInt(getProp('start'), 10) * 1000 - TZ_OFFSET),
-                            end: new Date(parseInt(getProp('end'), 10) * 1000 - TZ_OFFSET),
-                            duration: getProp('end', 10),
+                            begin: new Date(parseInt(getProp('Has start time'), 10) * 1000 - TZ_OFFSET),
+                            end: new Date(parseInt(getProp('Has end time'), 10) * 1000 - TZ_OFFSET),
+                            duration: getProp('Has duration'),
                             link: session.fullurl,
+                            speakers: (session['Is organized by'] || []).map(function(o) {
+                                return o.fulltext.replace(/^User:/, "")
+                            }),
                         })
                     })
 
@@ -147,7 +152,7 @@ function displaySessions() {
         addP('r', 'time', formatDate(data.begin, true) + " - " + formatDate(data.end))
         addP('l', 'subtitle', data.subtitle)
         addP('r', 'location', data.location)
-        // addP('l', 'speakers', data.speakers.map(function(s) { return s.name }).join(", "))
+        addP('l', 'speakers', data.speakers.join(", "))
         parent.append(el)
     })
 }
